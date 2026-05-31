@@ -1,5 +1,5 @@
 from functools import lru_cache
-from typing import Literal
+from typing import Literal, Optional
 
 from pydantic import computed_field
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -30,6 +30,7 @@ class Settings(BaseSettings):
     # ── Redis ─────────────────────────────────────────────────────────────────
     redis_host: str = "redis"
     redis_port: int = 6379
+    redis_password: Optional[str] = None  # <-- Добавили поле для пароля
 
     # ── Lead magnet ───────────────────────────────────────────────────────────
     lead_magnet_file_id: str = ""
@@ -46,6 +47,9 @@ class Settings(BaseSettings):
     @computed_field  # type: ignore[misc]
     @property
     def redis_url(self) -> str:
+        # Если пароль передан, собираем URL с авторизацией: redis://:пароль@хост:порт/0
+        if self.redis_password:
+            return f"redis://:{self.redis_password}@{self.redis_host}:{self.redis_port}/0"
         return f"redis://{self.redis_host}:{self.redis_port}/0"
 
 
