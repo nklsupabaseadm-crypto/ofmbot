@@ -1,3 +1,18 @@
+import logging
+
+from aiogram import F, Router
+from aiogram.types import CallbackQuery
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from app.database import repo
+from app.keyboards.inline import catalog_keyboard, payment_keyboard, product_keyboard
+from app.locales.i18n import t
+from app.services import crypto_pay
+
+logger = logging.getLogger(__name__)
+router = Router(name="catalog")
+
+
 @router.callback_query(F.data == "catalog")
 async def show_catalog(call: CallbackQuery, session: AsyncSession, lang: str) -> None:
     products = await repo.get_active_products(session)
@@ -5,7 +20,6 @@ async def show_catalog(call: CallbackQuery, session: AsyncSession, lang: str) ->
         await call.answer("No products available yet.", show_alert=True)
         return
 
-    # Всегда новое сообщение
     await call.message.answer(
         text=t("catalog_title", lang),
         parse_mode="HTML",
@@ -63,7 +77,6 @@ async def buy_product(call: CallbackQuery, session: AsyncSession, lang: str) -> 
 
     await repo.create_purchase(session, db_user.id, product_id, invoice_id)
 
-    # Новое сообщение — инвойс остаётся в истории даже после оплаты
     await call.message.answer(
         text=t("invoice_created", lang),
         parse_mode="HTML",
@@ -94,7 +107,6 @@ async def check_payment(call: CallbackQuery, session: AsyncSession, lang: str) -
 
     if status == "paid":
         await repo.mark_purchase_paid(session, invoice_id)
-        # Убираем кнопки с инвойса чтобы не нажимали повторно
         await call.message.edit_reply_markup(reply_markup=None)
         await _deliver_product(call, session, purchase.product_id, lang)
     elif status == "expired":
