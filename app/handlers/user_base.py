@@ -10,7 +10,6 @@ from app.database.repo import get_or_create_user, get_user_by_telegram_id
 from app.keyboards.inline import start_keyboard
 from app.locales.i18n import t
 import logging
-from app.middlewares.admin_filter import IsAdmin
 
 logger = logging.getLogger(__name__)
 router = Router(name="user_base")
@@ -47,10 +46,6 @@ async def cmd_start(message: Message, session: AsyncSession, lang: str) -> None:
         parse_mode="HTML",
         reply_markup=start_keyboard(lang),
     )
-
-@router.message(F.document, IsAdmin())
-async def get_file_id(message: Message) -> None:
-    await message.answer(f"`{message.document.file_id}`", parse_mode="Markdown")
 
 
 # ── THIS WAS MISSING ──────────────────────────────────────────────────────────
